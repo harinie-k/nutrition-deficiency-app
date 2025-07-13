@@ -56,7 +56,7 @@ if st.button("Predict Deficiency"):
     # Nutrients from food
     food_list = food_input.split(",")
     nutrients = calculate_nutrients(food_list)
-    nutrient_values = list(nutrients.values())
+    food_score = int(sum(nutrients.values())) 
     
     # Final input vector
     input_data = [
