@@ -84,6 +84,24 @@ if st.button("Predict Deficiency"):
     nutrient_df = pd.DataFrame(nutrients, index=["Amount (from input)"]).T
     st.bar_chart(nutrient_df)
 
+    # Recommended Daily Allowance (RDA) values
+    rda = {
+        'Iron': 18,       # mg
+        'B12': 2.4,       # µg
+        'VitD': 600,      # IU
+        'Calcium': 1000   # mg
+    }
+
+    # Prepare comparison DataFrame
+    comparison_df = pd.DataFrame({
+        'Consumed': nutrients,
+        'RDA': rda
+    })
+
+    st.subheader("📊 Nutrient Intake vs Daily Requirement")
+    st.bar_chart(comparison_df)
+
+    
     # Suggestions
     if result == "Iron Deficiency":
         st.info("🩸 Suggestion: Eat ragi, spinach, drumstick leaves, jaggery.")
