@@ -64,11 +64,11 @@ if st.button("Predict Deficiency"):
     ] + [int(fatigue), int(pale_skin), int(hair_loss), int(tingling), int(bone_pain), int(irritability)]
 
 # Match the exact features your model was trained on
-input_df = pd.DataFrame([input_data], columns=[
+    input_df = pd.DataFrame([input_data], columns=[
     'Age', 'Gender', 'Weight', 'Height', 'BMMI', 'Food_Log_Label',
     'Fatigue', 'Pale_Skin', 'Hair_Loss', 'Tingling_Sensation',
     'Bone_Pain', 'Irritability'
-])
+    ])
     
     # Make prediction
     prediction = model.predict(input_df)[0]
