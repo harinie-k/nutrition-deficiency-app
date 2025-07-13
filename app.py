@@ -59,11 +59,16 @@ if st.button("Predict Deficiency"):
     nutrient_values = list(nutrients.values())
     
     # Final input vector
-    input_data = [age, gender_code, bmi] + symptom_values + nutrient_values
-    input_df = pd.DataFrame([input_data], columns=[
-        'age', 'gender_code', 'bmi', 'fatigue', 'pale_skin', 'hair_loss',
-        'tingling', 'bone_pain', 'irritability', 'Iron', 'B12', 'VitD', 'Calcium'
-    ])
+    input_data = [
+    age, gender_code, weight, height, bmi, food_score
+    ] + [int(fatigue), int(pale_skin), int(hair_loss), int(tingling), int(bone_pain), int(irritability)]
+
+# Match the exact features your model was trained on
+input_df = pd.DataFrame([input_data], columns=[
+    'Age', 'Gender', 'Weight', 'Height', 'BMMI', 'Food_Log_Label',
+    'Fatigue', 'Pale_Skin', 'Hair_Loss', 'Tingling_Sensation',
+    'Bone_Pain', 'Irritability'
+])
     
     # Make prediction
     prediction = model.predict(input_df)[0]
