@@ -78,6 +78,11 @@ if st.button("Predict Deficiency"):
     result = label_map.get(prediction, "Unknown")
 
     st.success(f"🎯 Predicted Result: **{result}**")
+   
+    # Show Nutrient Intake as a Bar Chart
+    st.subheader("🧪 Nutrient Intake from Food Log")
+    nutrient_df = pd.DataFrame(nutrients, index=["Amount (from input)"]).T
+    st.bar_chart(nutrient_df)
 
     # Suggestions
     if result == "Iron Deficiency":
