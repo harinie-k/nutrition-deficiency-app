@@ -7,24 +7,32 @@ import joblib
 model = joblib.load('nutrition_model.pkl')
 
 # Sample food-nutrient mapping
-food_nutrient_table = {
-    'rice': {'Iron': 0.2, 'B12': 0.0, 'VitD': 0.0, 'Calcium': 10},
-    'curd': {'Iron': 0.1, 'B12': 0.4, 'VitD': 5, 'Calcium': 120},
-    'spinach': {'Iron': 2.7, 'B12': 0.0, 'VitD': 0.0, 'Calcium': 99},
-    'milk': {'Iron': 0.0, 'B12': 1.0, 'VitD': 40, 'Calcium': 125},
-    'ragi': {'Iron': 3.9, 'B12': 0.0, 'VitD': 0.0, 'Calcium': 344},
-    'paneer': {'Iron': 0.5, 'B12': 1.1, 'VitD': 7, 'Calcium': 208},
-}
+import pandas as pd
+from fuzzywuzzy import process
 
-# Function to calculate nutrient totals from food list
-def calculate_nutrients(food_list):
+# Load nutrient data from CSV
+df_nutrients = pd.read_csv("indian_food_nutrients.csv")
+
+# Fuzzy match function
+def match_food(food_name):
+    choices = df_nutrients['Food_Item'].tolist()
+    match, score = process.extractOne(food_name.strip().lower(), choices)
+    return match if score >= 80 else None
+
+# Nutrient calculation using CSV and fuzzy match
+def calculate_nutrients_from_csv(food_list):
     total = {'Iron': 0, 'B12': 0, 'VitD': 0, 'Calcium': 0}
+    
     for food in food_list:
-        food = food.lower().strip()
-        if food in food_nutrient_table:
-            for nutrient in total:
-                total[nutrient] += food_nutrient_table[food][nutrient]
+        matched = match_food(food)
+        if matched:
+            row = df_nutrients[df_nutrients['Food_Item'] == matched].iloc[0]
+            total['Iron'] += row['Iron_mg']
+            total['B12'] += row['B12_ug']
+            total['VitD'] += row['VitaminD_IU']
+            total['Calcium'] += row['Calcium_mg']
     return total
+
 
 # Streamlit UI
 st.title("🥗 AI Nutritional Deficiency Predictor")
@@ -55,7 +63,8 @@ if st.button("Predict Deficiency"):
     
     # Nutrients from food
     food_list = food_input.split(",")
-    nutrients = calculate_nutrients(food_list)
+    nutrients = calculate_nutrients_from_csv(food_list)
+
     food_score = int(sum(nutrients.values())) 
     
     # Final input vector
