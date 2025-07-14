@@ -1,5 +1,8 @@
 streamlit
-pandas
 scikit-learn
-joblib
+pandas
 numpy
+joblib
+fuzzywuzzy
+python-Levenshtein
+
