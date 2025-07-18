@@ -1,4 +1,9 @@
 import streamlit as st
+
+st.warning("🚧 This app is temporarily under maintenance. Please check back later.")
+st.stop()
+
+import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
