@@ -1,7 +1,7 @@
-import streamlit as st
+#import streamlit as st
 
-st.warning("🚧 This app is temporarily under maintenance. Please check back later.")
-st.stop()
+#st.warning("🚧 This app is temporarily under maintenance. Please check back later.")
+#st.stop()
 
 import streamlit as st
 import pandas as pd
@@ -128,4 +128,5 @@ if st.button("Predict Deficiency"):
     else:
         st.balloons()
         st.success("🎉 Great! No deficiency detected.")
+
 
