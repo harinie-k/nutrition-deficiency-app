@@ -45,16 +45,15 @@ default_meals = {
 }
 
 def generate_15_day_log():
-    food_log = {}
     today = date.today()
-    for i in range(15):
-        d = today - timedelta(days=14 - i)
-        # Randomly pick meals from default
+    dates = [today - timedelta(days=14 - i) for i in range(15)]
+    data = []
+    for d in dates:
         breakfast = random.choice(default_meals['Breakfast'])
         lunch = random.choice(default_meals['Lunch'])
         dinner = random.choice(default_meals['Dinner'])
-        food_log[d] = [breakfast, lunch, dinner]
-    return food_log
+        data.append({'Date': d.strftime('%d %b %Y'), 'Breakfast': breakfast, 'Lunch': lunch, 'Dinner': dinner})
+    return pd.DataFrame(data)
 
 # =============================
 # Streamlit UI
@@ -76,17 +75,18 @@ conditions = st.multiselect("Any health conditions?",
                             ["Diabetes", "Hypertension", "Kidney Issues", "None"])
 
 # ------------------------------
-# 15-Day Food Log with Default Diet
+# 15-Day Food Log Table
 # ------------------------------
 st.subheader("📅 15-Day Food Logging (Default Diet Profile)")
-st.write("The app has pre-filled your 15-day food log with typical local meals. Modify only if different.")
+st.write("Modify meals if different from the pre-filled typical diet.")
 
-food_log = generate_15_day_log()
-for d, meals in food_log.items():
-    with st.expander(f"🍽 {d.strftime('%d %b %Y')}"):
-        meals_text = ", ".join(meals)
-        modified = st.text_input(f"Food items for {d.strftime('%d %b')}", value=meals_text, key=f"food_{d}")
-        food_log[d] = [item.strip() for item in modified.split(",")]
+food_log_df = generate_15_day_log()
+edited_df = st.data_editor(food_log_df, num_rows="dynamic", use_container_width=True)
+
+# Convert edited table to dictionary for nutrient calculation
+food_log = {}
+for _, row in edited_df.iterrows():
+    food_log[pd.to_datetime(row['Date'])] = [row['Breakfast'], row['Lunch'], row['Dinner']]
 
 # Symptoms
 st.subheader("⚠️ Symptoms")
