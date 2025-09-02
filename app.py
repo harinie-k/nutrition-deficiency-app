@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 from fuzzywuzzy import process
 from datetime import date, timedelta
+import random
 
 # =============================
 # Load model & nutrient data
@@ -35,6 +36,27 @@ def calculate_nutrients_from_csv(food_list):
     return total
 
 # =============================
+# Default 15-day diet profile
+# =============================
+default_meals = {
+    'Breakfast': ['Idli', 'Dosa', 'Upma', 'Poha', 'Paratha'],
+    'Lunch': ['Rice + Dal + Vegetable', 'Chapati + Sabzi', 'Khichdi', 'Curd Rice', 'Vegetable Pulao'],
+    'Dinner': ['Dosa + Chutney', 'Roti + Sabzi', 'Khichdi', 'Light Upma', 'Soup + Bread']
+}
+
+def generate_15_day_log():
+    food_log = {}
+    today = date.today()
+    for i in range(15):
+        d = today - timedelta(days=14 - i)
+        # Randomly pick meals from default
+        breakfast = random.choice(default_meals['Breakfast'])
+        lunch = random.choice(default_meals['Lunch'])
+        dinner = random.choice(default_meals['Dinner'])
+        food_log[d] = [breakfast, lunch, dinner]
+    return food_log
+
+# =============================
 # Streamlit UI
 # =============================
 st.title("🥗 AI Nutritional Deficiency Predictor")
@@ -54,20 +76,17 @@ conditions = st.multiselect("Any health conditions?",
                             ["Diabetes", "Hypertension", "Kidney Issues", "None"])
 
 # ------------------------------
-# Daily Food Log Calendar (30 days)
+# 15-Day Food Log with Default Diet
 # ------------------------------
-st.subheader("📅 30-Day Food Logging")
-st.write("Enter your food intake for each day:")
+st.subheader("📅 15-Day Food Logging (Default Diet Profile)")
+st.write("The app has pre-filled your 15-day food log with typical local meals. Modify only if different.")
 
-today = date.today()
-dates = [today - timedelta(days=i) for i in range(29, -1, -1)]
-
-food_log = {}
-for d in dates:
+food_log = generate_15_day_log()
+for d, meals in food_log.items():
     with st.expander(f"🍽 {d.strftime('%d %b %Y')}"):
-        food_items = st.text_input(f"Food items for {d.strftime('%d %b')}", key=f"food_{d}")
-        if food_items:
-            food_log[d] = food_items.split(",")
+        meals_text = ", ".join(meals)
+        modified = st.text_input(f"Food items for {d.strftime('%d %b')}", value=meals_text, key=f"food_{d}")
+        food_log[d] = [item.strip() for item in modified.split(",")]
 
 # Symptoms
 st.subheader("⚠️ Symptoms")
@@ -86,7 +105,7 @@ if st.button("Predict Deficiency"):
     gender_code = {'Female': 0, 'Male': 1, 'Other': 2}[gender]
     symptom_values = [int(fatigue), int(pale_skin), int(hair_loss), int(tingling), int(bone_pain), int(irritability)]
 
-    # Process 30-day food log
+    # Process 15-day food log
     total_nutrients = {'Iron': 0, 'B12': 0, 'VitD': 0, 'Calcium': 0}
     for day, foods in food_log.items():
         nutrients = calculate_nutrients_from_csv(foods)
@@ -111,7 +130,7 @@ if st.button("Predict Deficiency"):
     st.success(f"🎯 Predicted Result: **{result}**")
 
     # Nutrient charts
-    st.subheader("🧪 Average Daily Nutrient Intake (from 30-day log)")
+    st.subheader("🧪 Average Daily Nutrient Intake (from 15-day log)")
     nutrient_df = pd.DataFrame(avg_nutrients, index=["Avg Amount"]).T
     st.bar_chart(nutrient_df)
 
