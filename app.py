@@ -21,11 +21,20 @@ def match_food(food_name):
     return match if score >= 80 else None
 
 # ------------------------------
-# Nutrient calculation
+# Nutrient calculation with allergy filtering
 # ------------------------------
 def calculate_nutrients_from_csv(food_list):
     total = {'Iron': 0, 'B12': 0, 'VitD': 0, 'Calcium': 0}
+    allergies = []
+    if "user_profile" in st.session_state:
+        allergies = st.session_state["user_profile"].get("allergies", [])
+
     for food in food_list:
+        food_clean = food.strip().lower()
+        if food_clean in allergies:
+            st.warning(f"⚠️ Skipped {food} (listed in allergies)")
+            continue
+
         matched = match_food(food)
         if matched:
             row = df_nutrients[df_nutrients['Food_Item'] == matched].iloc[0]
@@ -59,24 +68,47 @@ def generate_15_day_log():
 # Streamlit UI
 # =============================
 st.title("🥗 AI Nutritional Deficiency Predictor")
-st.write("Enter your details, health info, and daily food intake to detect possible deficiencies.")
 
-# User info
-age = st.number_input("Age", min_value=1, max_value=100, value=25)
-gender = st.selectbox("Gender", ["Female", "Male", "Other"])
-height = st.number_input("Height (cm)", 100, 250, 160)
+# ----------------------------
+# User Profile Form
+# ----------------------------
+st.header("👤 User Profile")
+
+with st.form("user_profile"):
+    name = st.text_input("Enter your name")
+    age_profile = st.number_input("Age", min_value=5, max_value=100, value=25)
+    gender_profile = st.selectbox("Gender", ["Female", "Male", "Other"])
+    allergies_input = st.text_area("List any food allergies (comma separated)")
+    health_conditions_input = st.text_area("List any health conditions (optional)")
+
+    submitted = st.form_submit_button("Save Profile")
+
+if submitted:
+    st.session_state["user_profile"] = {
+        "name": name,
+        "age": age_profile,
+        "gender": gender_profile,
+        "allergies": [a.strip().lower() for a in allergies_input.split(",") if a.strip()],
+        "health_conditions": health_conditions_input
+    }
+    st.success(f"Profile saved for {name}!")
+
+# Display saved profile
+if "user_profile" in st.session_state:
+    st.subheader("✅ Current Profile")
+    st.write(st.session_state["user_profile"])
+
+# ----------------------------
+# User Inputs (optional overrides)
+# ----------------------------
+age = st.number_input("Age (for prediction)", min_value=1, max_value=100, value=st.session_state.get("user_profile", {}).get("age", 25))
+gender = st.selectbox("Gender (for prediction)", ["Female", "Male", "Other"], index=["Female","Male","Other"].index(st.session_state.get("user_profile", {}).get("gender", "Female")))
 weight = st.number_input("Weight (kg)", 20, 200, 55)
+height = st.number_input("Height (cm)", 100, 250, 160)
 
-# Health info
-st.subheader("🩺 Health Information")
-allergies = st.multiselect("Do you have any food allergies?", 
-                           ["Milk", "Eggs", "Nuts", "Gluten", "Soy", "Seafood", "Other"])
-conditions = st.multiselect("Any health conditions?", 
-                            ["Diabetes", "Hypertension", "Kidney Issues", "None"])
-
-# ------------------------------
+# ----------------------------
 # 15-Day Food Log Table
-# ------------------------------
+# ----------------------------
 st.subheader("📅 15-Day Food Logging (Default Diet Profile)")
 st.write("Modify meals if different from the pre-filled typical diet.")
 
@@ -88,7 +120,9 @@ food_log = {}
 for _, row in edited_df.iterrows():
     food_log[pd.to_datetime(row['Date'])] = [row['Breakfast'], row['Lunch'], row['Dinner']]
 
+# ----------------------------
 # Symptoms
+# ----------------------------
 st.subheader("⚠️ Symptoms")
 fatigue = st.checkbox("Fatigue")
 pale_skin = st.checkbox("Pale Skin")
@@ -97,9 +131,9 @@ tingling = st.checkbox("Tingling Sensation")
 bone_pain = st.checkbox("Bone Pain")
 irritability = st.checkbox("Irritability")
 
-# ------------------------------
+# ----------------------------
 # Prediction
-# ------------------------------
+# ----------------------------
 if st.button("Predict Deficiency"):
     bmi = weight / ((height / 100) ** 2)
     gender_code = {'Female': 0, 'Male': 1, 'Other': 2}[gender]
@@ -142,23 +176,25 @@ if st.button("Predict Deficiency"):
 
     # Personalized Suggestions
     st.subheader("💡 Personalized Suggestions")
+    allergy_list = st.session_state.get("user_profile", {}).get("allergies", [])
+
     if result == "Iron Deficiency":
-        if "Milk" in allergies:
-            st.info("🩸 Suggestion: Eat spinach, jaggery, drumstick leaves (avoid dairy-based iron sources).")
-        else:
-            st.info("🩸 Suggestion: Eat ragi, spinach, drumstick leaves, jaggery.")
+        suggestions = ["Ragi", "Spinach", "Drumstick Leaves", "Jaggery", "Dates"]
     elif result == "B12 Deficiency":
-        if "Milk" in allergies:
-            st.info("🐄 Suggestion: Try eggs, fortified cereals (avoid milk/curd).")
-        else:
-            st.info("🐄 Suggestion: Add milk, curd, paneer, eggs.")
+        suggestions = ["Milk", "Curd", "Paneer", "Eggs", "Fortified Cereals"]
     elif result == "Calcium Deficiency":
-        if "Milk" in allergies:
-            st.info("🦴 Suggestion: Include sesame seeds, leafy greens.")
-        else:
-            st.info("🦴 Suggestion: Include sesame, milk, ragi.")
+        suggestions = ["Milk", "Curd", "Paneer", "Sesame Seeds", "Leafy Greens"]
     elif result == "Vitamin D Deficiency":
-        st.info("☀️ Suggestion: Get 15–20 min of sunlight daily, drink fortified foods.")
+        suggestions = ["Sunlight 15–20 min", "Fortified Foods", "Eggs", "Fish"]
     else:
-        st.balloons()
-        st.success("🎉 Great! No deficiency detected.")
+        suggestions = []
+
+    # Filter by allergies
+    safe_suggestions = [s for s in suggestions if s.strip().lower() not in allergy_list]
+
+    if safe_suggestions:
+        st.info("✅ Suggested Foods: " + ", ".join(safe_suggestions))
+    else:
+        st.info("✅ No deficiency detected or all suggestions are restricted due to allergies.")
+        if result == "No Deficiency":
+            st.balloons()
